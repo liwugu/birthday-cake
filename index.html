@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Happy Birthday</title>
+  <style>
+    :root {
+      --bg-dark: #12131a;
+      --bg-Lit: #1e1b2e;
+      --cake-top: #f8e8dc;
+      --cake-body: #e8b4b8;
+      --cake-bottom: #d48c94;
+      --plate: #cbd5e1;
+      --accent: #f59e0b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 35%, var(--bg-Lit), var(--bg-dark) 75%);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 20px 36px;
+      overflow: hidden;
+      transition: background 1s ease;
+    }
+
+    body.extinguished {
+      background: radial-gradient(circle at 50% 35%, #162032, #090a0f 80%);
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .header {
+      text-align: center;
+      z-index: 10;
+      max-width: 420px;
+    }
+
+    .title {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      line-height: 1.5;
+      min-height: 2.7em;
+    }
+
+    /* 蛋糕主体容器 */
+    .stage {
+      position: relative;
+      width: 300px;
+      height: 280px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 5;
+      margin: 10px 0;
+    }
+
+    .cake {
+      position: relative;
+      width: 240px;
+      height: 160px;
+      cursor: pointer;
+    }
+
+    /* 盘子 */
+    .plate {
+      position: absolute;
+      bottom: -14px;
+      left: -20px;
+      width: 280px;
+      height: 28px;
+      background: var(--plate);
+      border-radius: 50%;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    }
+
+    /* 蛋糕层级 */
+    .layer {
+      position: absolute;
+      width: 100%;
+      border-radius: 12px 12px 20px 20px;
+    }
+
+    .layer-bottom {
+      bottom: 0;
+      height: 75px;
+      background: var(--cake-bottom);
+      box-shadow: inset 0 -8px 0 rgba(0,0,0,0.12);
+    }
+
+    .layer-middle {
+      bottom: 65px;
+      height: 70px;
+      background: var(--cake-body);
+      box-shadow: inset 0 -6px 0 rgba(0,0,0,0.08);
+    }
+
+    /* 顶部奶油顶面（可点击插蜡烛区域） */
+    .icing-top {
+      position: absolute;
+      bottom: 115px;
+      left: 0;
+      width: 100%;
+      height: 44px;
+      background: var(--cake-top);
+      border-radius: 50%;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+      z-index: 3;
+    }
+
+    /* 奶油滴落装饰 */
+    .drip {
+      position: absolute;
+      top: 22px;
+      background: var(--cake-top);
+      border-radius: 0 0 20px 20px;
+      z-index: 2;
+    }
+    .drip-1 { left: 18px; width: 26px; height: 32px; }
+    .drip-2 { left: 62px; width: 34px; height: 46px; }
+    .drip-3 { left: 115px; width: 28px; height: 28px; }
+    .drip-4 { left: 160px; width: 36px; height: 50px; }
+    .drip-5 { left: 205px; width: 22px; height: 34px; }
+
+    /* 蜡烛容器 */
+    #candles-container {
+      position: absolute;
+      bottom: 115px;
+      left: 0;
+      width: 100%;
+      height: 44px;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .candle {
+      position: absolute;
+      width: 12px;
+      height: 48px;
+      background: repeating-linear-gradient(
+        45deg,
+        #ffffff,
+        #ffffff 5px,
+        #60a5fa 5px,
+        #60a5fa 10px
+      );
+      border-radius: 3px;
+      transform: translate(-50%, -85%);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+      pointer-events: auto;
+    }
+
+    .wick {
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 7px;
+      background: #334155;
+    }
+
+    .flame {
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      width: 14px;
+      height: 22px;
+      background: radial-gradient(ellipse at bottom, #fffbeb 15%, #fde047 45%, #f97316 85%, transparent 100%);
+      border-radius: 50% 50% 35% 35%;
+      transform: translateX(-50%);
+      transform-origin: 50% 100%;
+      box-shadow: 0 0 16px 4px rgba(251, 146, 60, 0.55);
+      animation: flicker 1.2s ease-in-out infinite alternate;
+      transition: opacity 0.25s ease, transform 0.15s ease;
+    }
+
+    .candle.out .flame {
+      opacity: 0;
+      pointer-events: none;
+      animation: none;
+    }
+
+    /* 熄灭后的轻烟 */
+    .smoke {
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      width: 6px;
+      height: 18px;
+      background: rgba(203, 213, 225, 0.45);
+      border-radius: 50%;
+      filter: blur(3px);
+      opacity: 0;
+      transform: translateX(-50%);
+    }
+
+    .candle.out .smoke {
+      animation: smoke-rise 1.4s ease-out forwards;
+    }
+
+    @keyframes flicker {
+      0%   { transform: translateX(-50%) scale(1) rotate(-2deg); }
+      50%  { transform: translateX(-50%) scale(1.06, 0.96) rotate(2deg); }
+      100% { transform: translateX(-50%) scale(0.95, 1.05) rotate(-1deg); }
+    }
+
+    @keyframes smoke-rise {
+      0%   { opacity: 0.7; transform: translate(-50%, 0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -35px) scale(2.8); }
+    }
+
+    /* 祝福语卡片（吹灭后显现） */
+    .wish-card {
+      max-width: 380px;
+      width: 100%;
+      background: rgba(30, 41, 59, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-align: left;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .wish-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .wish-text {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      white-space: pre-line;
+    }
+
+    /* 底部控制与音量反馈面板 */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 320px;
+      z-index: 10;
+    }
+
+    .btn {
+      background: #f8fafc;
+      color: #0f172a;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 24px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.2s ease;
+      width: 100%;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .meter-wrap {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .meter-wrap.active {
+      opacity: 1;
+    }
+
+    .meter-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #f59e0b, #ef4444);
+      transition: width 0.08s linear;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="header">
+    <h1 class="title" id="page-title">生日快乐</h1>
+    <p class="subtitle" id="status-text">点击下方按钮启用麦克风，对着手机底部吹灭蜡烛（点击蛋糕顶面可添置蜡烛）</p>
+  </div>
+
+  <div class="stage">
+    <div class="cake" id="cake-area">
+      <div class="plate"></div>
+      <div class="layer layer-bottom"></div>
+      <div class="layer layer-middle"></div>
+      <div class="icing-top" id="icing-top">
+        <div class="drip drip-1"></div>
+        <div class="drip drip-2"></div>
+        <div class="drip drip-3"></div>
+        <div class="drip drip-4"></div>
+        <div class="drip drip-5"></div>
+      </div>
+      <div id="candles-container"></div>
+    </div>
+  </div>
+
+  <div class="wish-card" id="wish-card">
+    <div class="wish-text" id="wish-content"></div>
+  </div>
+
+  <div class="controls">
+    <div class="meter-wrap" id="meter-wrap">
+      <div class="meter-bar" id="meter-bar"></div>
+    </div>
+    <button class="btn" id="mic-btn">开启麦克风吹蜡烛</button>
+  </div>
+
+  <script>
+    /**
+     * ==================== 个性化配置区 ====================
+     */
+    const CONFIG = {
+      friendName: "留白茉莉",
+      initialCandles: 3, // 初始蜡烛数量
+      blowThreshold: 48, // 吹气判定阈值（范围 20-100，数值越小越容易吹灭）
+      wishMessage: "祝你新的一岁：\n代码无 Bug，万事皆顺遂。\n无论走得多远，始终保有自由与热爱。"
+    };
+    /** ==================================================== */
+
+    const pageTitle = document.getElementById("page-title");
+    const statusText = document.getElementById("status-text");
+    const candlesContainer = document.getElementById("candles-container");
+    const cakeArea = document.getElementById("cake-area");
+    const micBtn = document.getElementById("mic-btn");
+    const meterWrap = document.getElementById("meter-wrap");
+    const meterBar = document.getElementById("meter-bar");
+    const wishCard = document.getElementById("wish-card");
+    const wishContent = document.getElementById("wish-content");
+
+    pageTitle.textContent = `${CONFIG.friendName}，生日快乐`;
+    wishContent.textContent = CONFIG.wishMessage;
+
+    let candles = [];
+    let audioContext = null;
+    let analyser = null;
+    let micActive = false;
+    let blowHoldFrames = 0;
+
+    // 創建单根蜡烛（x, y 为相对于蛋糕顶面的百分比坐标）
+    function createCandle(xPercent, yPercent) {
+      const candle = document.createElement("div");
+      candle.className = "candle";
+      candle.style.left = `${xPercent}%`;
+      candle.style.top = `${yPercent}%`;
+      // 根据纵坐标排列层级，保证前排遮挡后排
+      candle.style.zIndex = Math.floor(yPercent);
+
+      const wick = document.createElement("div");
+      wick.className = "wick";
+
+      const flame = document.createElement("div");
+      flame.className = "flame";
+      flame.style.animationDelay = `${(Math.random() * 0.8).toFixed(2)}s`;
+
+      const smoke = document.createElement("div");
+      smoke.className = "smoke";
+
+      candle.appendChild(wick);
+      candle.appendChild(flame);
+      candle.appendChild(smoke);
+
+      // 支持点击单根蜡烛直接熄灭（作为无麦克风环境的降级操作）
+      candle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        extinguishSingleCandle(candle);
+      });
+
+      candlesContainer.appendChild(candle);
+      candles.push({ el: candle, flameEl: flame, out: false });
+      updateStatusAfterChange();
+    }
+
+    // 初始化默认蜡烛
+    function initDefaultCandles() {
+      candlesContainer.innerHTML = "";
+      candles = [];
+      const count = CONFIG.initialCandles;
+      for (let i = 0; i < count; i++) {
+        const x = count === 1 ? 50 : 22 + (56 / (count - 1)) * i;
+        const y = 45 + (i % 2 === 0 ? 8 : -8);
+        createCandle(x, y);
+      }
+    }
+
+    // 点击蛋糕顶部任意位置添加新蜡烛
+    cakeArea.addEventListener("click", (e) => {
+      const rect = candlesContainer.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // 限制在椭圆顶面范围内
+      const xPercent = Math.max(12, Math.min(88, (clickX / rect.width) * 100));
+      const yPercent = Math.max(18, Math.min(78, (clickY / rect.height) * 100));
+
+      createCandle(xPercent, yPercent);
+    });
+
+    function extinguishSingleCandle(candleDom) {
+      const target = candles.find(c => c.el === candleDom && !c.out);
+      if (!target) return;
+      target.out = true;
+      target.el.classList.add("out");
+      checkAllExtinguished();
+    }
+
+    function updateStatusAfterChange() {
+      const activeCount = candles.filter(c => !c.out).length;
+      if (activeCount > 0) {
+        document.body.classList.remove("extinguished");
+        wishCard.classList.remove("visible");
+      }
+    }
+
+    function checkAllExtinguished() {
+      const remaining = candles.filter(c => !c.out).length;
+      if (remaining === 0 && candles.length > 0) {
+        document.body.classList.add("extinguished");
+        statusText.textContent = "全部吹灭，愿你许下的愿望都能实现。";
+        wishCard.classList.add("visible");
+        launchConfetti();
+        micBtn.textContent = "重新点燃蜡烛";
+        micBtn.classList.add("secondary");
+      } else {
+        statusText.textContent = `还剩 ${remaining} 根蜡烛，继续吹气或点击火焰熄灭`;
+      }
+    }
+
+    // 重新点燃所有蜡烛
+    function relightAllCandles() {
+      candles.forEach(c => {
+        c.out = false;
+        c.el.classList.remove("out");
+        c.flameEl.style.transform = "translateX(-50%)";
+      });
+      document.body.classList.remove("extinguished");
+      wishCard.classList.remove("visible");
+      statusText.textContent = micActive
+        ? "麦克风已就绪，请对着手机底部吹气"
+        : "点击蜡烛火焰可直接熄灭，或点击蛋糕顶面增加蜡烛";
+      if (micActive) {
+        micBtn.style.display = "none";
+      }
+    }
+
+    // 初始化 iOS 兼容的 Web Audio API
+    async function enableMicrophone() {
+      const remaining = candles.filter(c => !c.out).length;
+      if (remaining === 0) {
+        relightAllCandles();
+        return;
+      }
+
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!audioContext) {
+          audioContext = new AudioCtx();
+        }
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
+        // 关闭 iOS 语音降噪与自动增益，保留吹气的低频气流特征
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        });
+
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.6;
+        source.connect(analyser);
+
+        micActive = true;
+        meterWrap.classList.add("active");
+        micBtn.style.display = "none";
+        statusText.textContent = "正在监听气流：请对着手机底部麦克风吹气";
+
+        detectBlowLoop();
+      } catch (err) {
+        // 权限被拒或处于非 HTTPS / 内置受限容器时的降级提示
+        statusText.textContent = "当前环境未开启麦克风权限，可直接点击蜡烛火焰将其熄灭";
+        micBtn.textContent = "重新点燃蜡烛";
+        micBtn.classList.add("secondary");
+      }
+    }
+
+    function detectBlowLoop() {
+      if (!micActive || !analyser) return;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
+
+      // 吹气声主要集中在低频段（取前 25% 的频率分箱计算均值）
+      const lowFreqBins = Math.floor(bufferLength * 0.25);
+      let sum = 0;
+      for (let i = 0; i < lowFreqBins; i++) {
+        sum += dataArray[i];
+      }
+      const avgLowEnergy = sum / lowFreqBins;
+
+      // 更新底部气流指示条
+      const meterPercent = Math.min(100, Math.round((avgLowEnergy / 120) * 100));
+      meterBar.style.width = `${meterPercent}%`;
+
+      const activeCandles = candles.filter(c => !c.out);
+
+      if (activeCandles.length > 0) {
+        // 根据气流强度实时偏转火苗，提供物理视觉反馈
+        const skewDeg = Math.min(35, (avgLowEnergy / CONFIG.blowThreshold) * 18);
+        const scaleY = Math.max(0.5, 1 - (avgLowEnergy / 180));
+        activeCandles.forEach(c => {
+          c.flameEl.style.transform = `translateX(-50%) rotate(${skewDeg}deg) scaleY(${scaleY})`;
+        });
+
+        // 达到吹气阈值判定
+        if (avgLowEnergy > CONFIG.blowThreshold) {
+          blowHoldFrames++;
+          // 持续吹气超过 4 帧后开始逐根吹灭
+          if (blowHoldFrames > 4) {
+            const randomTarget = activeCandles[Math.floor(Math.random() * activeCandles.length)];
+            extinguishSingleCandle(randomTarget.el);
+            blowHoldFrames = 1; // 留出微小间隔，呈现逐根熄灭的真实感
+          }
+        } else {
+          blowHoldFrames = Math.max(0, blowHoldFrames - 1);
+        }
+      }
+
+      requestAnimationFrame(detectBlowLoop);
+    }
+
+    micBtn.addEventListener("click", enableMicrophone);
+
+    /**
+     * 原生 Canvas 礼花粒子引擎（无第三方库依赖）
+     */
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    let particles = [];
+    let animId = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function launchConfetti() {
+      particles = [];
+      const colors = ["#f59e0b", "#38bdf8", "#f43f5e", "#a855f7", "#10b981", "#fef08a"];
+      for (let i = 0; i < 110; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height * 0.45,
+          vx: (Math.random() - 0.5) * 14,
+          vy: -(Math.random() * 12 + 5),
+          size: Math.random() * 7 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vr: (Math.random() - 0.5) * 10,
+          gravity: 0.25,
+          drag: 0.985,
+          opacity: 1
+        });
+      }
+      if (animId) cancelAnimationFrame(animId);
+      renderConfetti();
+    }
+
+    function renderConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+
+      particles.forEach(p => {
+        p.vx *= p.drag;
+        p.vy *= p.drag;
+        p.vy += p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.vr;
+
+        if (p.y > canvas.height * 0.85) {
+          p.opacity -= 0.025;
+        }
+
+        if (p.opacity > 0) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          ctx.restore();
+        }
+      });
+
+      if (alive) {
+        animId = requestAnimationFrame(renderConfetti);
+      }
+    }
+
+    // 启动初始化
+    initDefaultCandles();
+  </script>
+</body>
+</html>
